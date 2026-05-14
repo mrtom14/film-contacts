@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Film Contacts Extractor</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Georgia, serif; background: #f2f2ef; color: #1a1a1a; min-height: 100vh; padding: 0; }
+
+  /* INSTRUCTIONS SCREEN */
+  #instructions-screen {
+    max-width: 680px; margin: 0 auto; padding: 40px 24px;
+  }
+  #instructions-screen h1 { font-size: 24px; margin-bottom: 6px; }
+  #instructions-screen .subtitle { color: #777; font-size: 14px; margin-bottom: 32px; }
+  .instr-card {
+    background: #fff; border: 1px solid #ddd; border-radius: 8px;
+    padding: 22px 24px; margin-bottom: 16px;
+  }
+  .instr-card h2 { font-size: 16px; margin-bottom: 12px; display: flex; align-items: center; gap: 10px; }
+  .instr-card h2 .badge {
+    background: #1565c0; color: #fff; border-radius: 50%;
+    width: 26px; height: 26px; display: inline-flex; align-items: center;
+    justify-content: center; font-size: 13px; font-weight: bold; flex-shrink: 0;
+  }
+  .instr-card p, .instr-card li { font-size: 14px; color: #444; line-height: 1.7; }
+  .instr-card ul, .instr-card ol { padding-left: 20px; }
+  .instr-card li { margin-bottom: 4px; }
+  .instr-card .highlight {
+    background: #fff8e1; border-left: 4px solid #f9a825;
+    padding: 10px 14px; border-radius: 0 6px 6px 0; margin-top: 10px; font-size: 13px; color: #5d4037;
+  }
+  .instr-card .tip {
+    background: #e8f5e9; border-left: 4px solid #43a047;
+    padding: 10px 14px; border-radius: 0 6px 6px 0; margin-top: 10px; font-size: 13px; color: #2e7d32;
+  }
+  tag { display: inline-block; font-family: monospace; font-size: 12px; background: #f0f0f0; border: 1px solid #ccc; border-radius: 3px; padding: 1px 6px; }
+  .big-start-btn {
+    display: block; width: 100%; padding: 18px; font-size: 18px; font-family: Georgia, serif;
+    font-weight: bold; background: #c89000; color: #fff; border: none; border-radius: 8px;
+    cursor: pointer; margin-top: 24px; text-align: center;
+  }
+  .big-start-btn:hover { background: #a37200; }
+
+  /* MAIN APP SCREEN */
+  #app-screen { display: none; max-width: 720px; margin: 0 auto; padding: 24px 20px; }
+  #app-screen h1 { font-size: 20px; font-weight: bold; margin-bottom: 4px; }
+  .app-subtitle { font-size: 13px; color: #777; margin-bottom: 22px; }
+
+  .step-card {
+    background: #fff; border: 1px solid #ddd;
+    border-radius: 0 8px 8px 0; padding: 18px 20px; margin-bottom: 14px;
+  }
+  .step-card .step-inner { display: flex; align-items: flex-start; }
+  .step-num {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 26px; height: 26px; border-radius: 50%; font-weight: bold;
+    font-size: 13px; margin-right: 10px; flex-shrink: 0; color: #fff;
+  }
+  .step-title { font-weight: bold; font-size: 15px; margin-bottom: 6px; }
+  .step-body { font-size: 13px; color: #555; line-height: 1.6; }
+  .step-body p { margin: 6px 0; }
+
+  .progress-wrap { margin: 10px 0 6px; }
+  .progress-meta { display: flex; justify-content: space-between; font-size: 12px; color: #555; margin-bottom: 4px; }
+  .progress-bar-bg { background: #e0e0e0; border-radius: 4px; height: 8px; }
+  .progress-bar-fill { height: 100%; border-radius: 4px; transition: width 0.5s; }
+  .progress-sub { font-size: 11px; color: #aaa; margin-top: 4px; }
+
+  .counts-row { display: flex; gap: 10px; flex-wrap: wrap; margin: 12px 0; }
+  .count-box {
+    background: #fff; border: 1px solid #ddd; padding: 10px 16px;
+    border-radius: 6px; min-width: 80px; text-align: center;
+  }
+  .count-num { font-size: 22px; font-weight: bold; }
+  .count-label { font-size: 11px; color: #888; }
+
+  button.btn { padding: 10px 22px; font-family: Georgia, serif; font-weight: bold; font-size: 14px; cursor: pointer; border-radius: 6px; border: none; }
+  button.btn-amber { background: #c89000; color: #fff; }
+  button.btn-amber:hover { background: #a37200; }
+  button.btn-green { background: #2e7d32; color: #fff; }
+  button.btn-green:hover { background: #1b5e20; }
+  button.btn-blue { background: #1565c0; color: #fff; }
+  button.btn-blue:hover { background: #0d47a1; }
+  button.btn-stop { background: #fff; color: #c62828; border: 2px solid #c62828 !important; }
+  button.btn-stop:hover { background: #ffebee; }
+
+  .inline-tag { display: inline-block; font-family: monospace; font-size: 11px; background: #f0f0f0; border: 1px solid #ccc; border-radius: 3px; padding: 1px 6px; }
+  .safe-note { font-size: 12px; color: #888; margin-left: 14px; }
+
+  .drop-zone {
+    border: 3px dashed #bbb; background: #fafafa; border-radius: 6px;
+    padding: 28px 20px; text-align: center; margin-bottom: 12px; transition: all 0.15s;
+  }
+  .drop-zone.drag-over { border-color: #1565c0; background: #e8f0fe; }
+  .drop-zone-icon { font-size: 32px; margin-bottom: 6px; }
+  .drop-zone-title { font-size: 15px; font-weight: bold; color: #555; margin-bottom: 4px; }
+  .drop-zone-sub { font-size: 12px; color: #aaa; }
+
+  .resume-info {
+    background: #e8f4fd; border: 1px solid #90caf9; border-radius: 4px;
+    padding: 10px 14px; margin-bottom: 12px; font-size: 13px; color: #1565c0;
+  }
+
+  .log-panel { background: #fff; border: 1px solid #ddd; border-radius: 6px; padding: 14px 16px; margin-top: 8px; }
+  .log-label { font-size: 11px; font-weight: bold; color: #888; margin-bottom: 8px; letter-spacing: 1px; text-transform: uppercase; }
+  .log-scroll {
+    background: #f8f8f8; border: 1px solid #eee; border-radius: 3px;
+    height: 180px; overflow-y: auto; padding: 8px 10px; font-family: monospace;
+  }
+  .log-line { font-size: 11px; line-height: 1.7; }
+  .log-time { color: #ccc; margin-right: 8px; }
+  .log-info { color: #888; }
+  .log-success { color: #2e7d32; }
+  .log-warn { color: #b07000; }
+  .log-error { color: #c62828; }
+
+  .back-link { font-size: 13px; color: #1565c0; cursor: pointer; text-decoration: underline; margin-bottom: 16px; display: inline-block; }
+
+  ol.instr-steps { padding-left: 20px; }
+  ol.instr-steps li { margin-bottom: 8px; font-size: 14px; color: #444; line-height: 1.6; }
+</style>
+</head>
+<body>
+
+<!-- ===================== INSTRUCTIONS SCREEN ===================== -->
+<div id="instructions-screen">
+  <h1>🎬 Film Contacts Extractor</h1>
+  <p class="subtitle">Reads your Zoho call sheet emails and builds a master contacts spreadsheet — by Tom Osborn</p>
+
+  <div class="instr-card">
+    <h2><span class="badge">?</span> What does this tool do?</h2>
+    <p>It searches your Zoho email inbox for all your call sheet emails, reads through each one, and pulls out every crew member's name, role, phone number and email address. At the end it creates a tidy <tag>.xlsx</tag> spreadsheet — one row per person, with every shoot they appeared on.</p>
+    <p style="margin-top:8px">It does this automatically. You just click Start and leave it running.</p>
+  </div>
+
+  <div class="instr-card">
+    <h2><span class="badge">1</span> Before you start — one-time setup</h2>
+    <p>This tool needs to be able to log into your Zoho email and your Claude account. Both connections are already built in. There is nothing to install.</p>
+    <div class="highlight">
+      ⚠️ <strong>Important:</strong> Open this file in <strong>Google Chrome</strong> or <strong>Firefox</strong>. It will not work properly in Internet Explorer or older browsers.
+    </div>
+  </div>
+
+  <div class="instr-card">
+    <h2><span class="badge">2</span> How to run it</h2>
+    <ol class="instr-steps">
+      <li>Click the big <strong>Start the extractor</strong> button below</li>
+      <li>Click <strong>Start Fresh</strong> on the next screen</li>
+      <li>Leave it running — it will work through your emails automatically</li>
+      <li>Every few emails, a file called <tag>filmcontacts_checkpoint.json</tag> will save itself to your Downloads folder — this is your progress backup, keep it safe</li>
+      <li>When it finishes, click <strong>Download spreadsheet</strong></li>
+    </ol>
+    <div class="tip">
+      ✅ <strong>You don't need to watch it.</strong> Feel free to do other things while it runs — just don't close this browser tab.
+    </div>
+  </div>
+
+  <div class="instr-card">
+    <h2><span class="badge">3</span> If it stops before finishing</h2>
+    <p>Because this tool makes a lot of requests to Claude, it may hit a usage limit part-way through. Don't worry — it saves your progress automatically.</p>
+    <ol class="instr-steps">
+      <li>When it stops, your progress is already saved in <tag>filmcontacts_checkpoint.json</tag> in your Downloads folder</li>
+      <li>Wait a few hours for your Claude usage to refresh (or come back the next day)</li>
+      <li>Open this file again in your browser</li>
+      <li>Click <strong>Start the extractor</strong> again</li>
+      <li>Scroll down to <strong>Step 4</strong> on the next screen</li>
+      <li>Drag the <tag>filmcontacts_checkpoint.json</tag> file from your Downloads folder and drop it into the box</li>
+      <li>Click <strong>Resume</strong> — it will pick up exactly where it left off</li>
+    </ol>
+    <div class="highlight">
+      ⚠️ For roughly 380 emails, you may need to do this 2–3 times in total. Each session takes 30–60 minutes.
+    </div>
+  </div>
+
+  <div class="instr-card">
+    <h2><span class="badge">4</span> The spreadsheet you'll get</h2>
+    <p>The file <tag>FilmContacts_Master.xlsx</tag> will have four sheets:</p>
+    <ul style="margin-top:8px; padding-left:20px">
+      <li style="margin-bottom:4px"><strong>Crew Contacts</strong> — one row per crew person, with all their shoots listed across</li>
+      <li style="margin-bottom:4px"><strong>Agency &amp; Production</strong> — same layout for agency and production company contacts</li>
+      <li style="margin-bottom:4px"><strong>Productions</strong> — one row per production</li>
+      <li style="margin-bottom:4px"><strong>All Shoots</strong> — every shoot day as its own row</li>
+    </ul>
+    <p style="margin-top:8px; font-size:13px; color:#666;">Grey italic text means the tool wasn't 100% certain about that piece of information. Location cells have a clickable Maps link.</p>
+  </div>
+
+  <button class="big-start-btn" onclick="showApp()">▶ Start the extractor →</button>
+</div>
+
+<!-- ===================== APP SCREEN ===================== -->
+<div id="app-screen">
+  <span class="back-link" onclick="showInstructions()">← Back to instructions</span>
+  <h1>🎬 Film Contacts Extractor</h1>
+  <p class="app-subtitle">Reads your Zoho call sheet emails and builds a master contacts spreadsheet.</p>
+
+  <!-- Step 1 -->
+  <div class="step-card" id="step1-card" style="border-left: 4px solid #1565c0;">
+    <div class="step-inner">
+      <span class="step-num" id="step1-num" style="background:#1565c0;">1</span>
+      <div style="flex:1">
+        <div class="step-title" id="step1-title">Start the extraction</div>
+        <div class="step-body" id="step1-body">
+          <p>Click below to begin. The tool will search your Zoho mailbox for call sheet emails.</p>
+          <button class="btn btn-amber" onclick="startFresh()" id="btn-start">▶ Start Fresh</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 2 -->
+  <div class="step-card" id="step2-card" style="border-left: 4px solid #ccc; opacity:0.5;">
+    <div class="step-inner">
+      <span class="step-num" id="step2-num" style="background:#bbb;">2</span>
+      <div style="flex:1">
+        <div class="step-title" id="step2-title">Extraction will run here</div>
+        <div class="step-body" id="step2-body">
+          <p>This area will show progress once emails are found.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 3 -->
+  <div class="step-card" id="step3-card" style="border-left: 4px solid #ccc; opacity:0.5;">
+    <div class="step-inner">
+      <span class="step-num" id="step3-num" style="background:#bbb;">3</span>
+      <div style="flex:1">
+        <div class="step-title">Download your spreadsheet</div>
+        <div class="step-body" id="step3-body">
+          <p>Download as <span class="inline-tag">.xlsx</span> at any point — even mid-run for a snapshot.</p>
+          <p style="color:#aaa;">Appears once contacts have been found.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 4 -->
+  <div class="step-card" id="step4-card" style="border-left: 4px solid #ccc;">
+    <div class="step-inner">
+      <span class="step-num" style="background:#bbb;">4</span>
+      <div style="flex:1">
+        <div class="step-title">Hit the Claude usage limit? Resume here</div>
+        <div class="step-body">
+          <p>If extraction stops due to Claude's usage limit:</p>
+          <ol style="margin:6px 0 12px; padding-left:20px; line-height:2; font-size:13px; color:#444;">
+            <li>Find <span class="inline-tag">filmcontacts_checkpoint.json</span> in your Downloads folder</li>
+            <li>Return here when your Claude usage has refreshed</li>
+            <li>Drag that file and drop it into the box below</li>
+            <li>Click Resume</li>
+          </ol>
+          <div id="resume-info" style="display:none;" class="resume-info"></div>
+          <div class="drop-zone" id="drop-zone"
+            ondragover="handleDragOver(event)"
+            ondragleave="handleDragLeave()"
+            ondrop="handleDrop(event)">
+            <div class="drop-zone-icon">📂</div>
+            <div class="drop-zone-title">Drop your checkpoint file here</div>
+            <div class="drop-zone-sub">Drag <span class="inline-tag">filmcontacts_checkpoint.json</span> from Downloads and drop it anywhere in this box</div>
+          </div>
+          <div id="resume-btn-wrap" style="display:none;">
+            <button class="btn btn-blue" onclick="startResume()">⏩ Resume from checkpoint</button>
+          </div>
+          <p id="no-checkpoint-msg" style="font-size:12px; color:#aaa;">No checkpoint loaded yet.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Log -->
+  <div class="log-panel">
+    <div class="log-label">Technical log</div>
+    <div class="log-scroll" id="log-scroll">
+      <div class="log-line log-info"><span class="log-time"></span>Waiting…</div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Constants ──────────────────────────────────────────────────────────────
+const ZOHO_MCP = "https://zoho-mail-mcp-923873690.zohomcp.com/mcp/cdfe522995d14b465fb412f842d9d820/message";
+const ACCOUNT_ID = "6645206000000008001";
+const BATCH_SIZE = 4;
+const API_BASE = ["https://", "api.anthrop", "ic.com/v1/messages"].join("");
+const DEPARTMENTS = ["Production","AD Dept","Camera","Lighting","Sound","Art Dept","Costume","HMU","Locations","Grip","Editorial","Stills/BTS","Runners","Transport","Medical","SFX","Casting","Movement","Agency"];
+
+// ── State ──────────────────────────────────────────────────────────────────
+let phase = "idle";
+let stopRequested = false;
+let startTime = null;
+let doneAtStart = 0;
+
+let crewData = {};
+let agencyData = {};
+let shootsData = [];
+let productionsData = {};
+let processedIds = new Set();
+let allEmailIds = [];
+let skippedCount = 0;
+let errorCount = 0;
+
+// ── Screen switching ───────────────────────────────────────────────────────
+function showApp() {
+  document.getElementById("instructions-screen").style.display = "none";
+  document.getElementById("app-screen").style.display = "block";
+  addLog("Ready. Click Start Fresh, or drop a checkpoint file to resume.", "info");
+}
+function showInstructions() {
+  document.getElementById("instructions-screen").style.display = "block";
+  document.getElementById("app-screen").style.display = "none";
+}
+
+// ── Logging ────────────────────────────────────────────────────────────────
+function addLog(msg, type) {
+  const scroll = document.getElementById("log-scroll");
+  if (scroll.children.length === 1 && scroll.children[0].textContent.trim() === "Waiting…") {
+    scroll.innerHTML = "";
+  }
+  const d = document.createElement("div");
+  d.className = "log-line log-" + (type || "info");
+  const t = new Date().toLocaleTimeString();
+  d.innerHTML = '<span class="log-time">' + t + '</span>' + escHtml(msg);
+  scroll.appendChild(d);
+  // Keep last 300 lines
+  while (scroll.children.length > 300) scroll.removeChild(scroll.firstChild);
+  scroll.scrollTop = scroll.scrollHeight;
+}
+function escHtml(s) {
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+// ── API helpers ────────────────────────────────────────────────────────────
+async function callClaude(system, user) {
+  const r = await fetch(API_BASE, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: "claude-sonnet-4-20250514",
+      max_tokens: 1500,
+      system: system,
+      messages: [{ role: "user", content: user }]
+    })
+  });
+  return r.json();
+}
+
+async function callClaudeMCP(prompt) {
+  const r = await fetch(API_BASE, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: "claude-sonnet-4-20250514",
+      max_tokens: 4000,
+      messages: [{ role: "user", content: prompt }],
+      mcp_servers: [{ type: "url", url: ZOHO_MCP, name: "zoho" }]
+    })
+  });
+  return r.json();
+}
+
+function getText(data) {
+  if (!data || !data.content) return "";
+  return data.content.filter(b => b.type === "text").map(b => b.text).join("\n");
+}
+function getToolResults(data) {
+  if (!data || !data.content) return [];
+  return data.content
+    .filter(b => b.type === "mcp_tool_result")
+    .map(b => (b.content && b.content[0] && b.content[0].text) || "")
+    .filter(Boolean);
+}
+
+// ── Checkpoint ─────────────────────────────────────────────────────────────
+function downloadJSON(obj, filename) {
+  const blob = new Blob([JSON.stringify(obj)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = filename; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+}
+
+function saveCheckpoint() {
+  updateCounts();
+  updateProgress();
+  downloadJSON({
+    allEmailIds: allEmailIds,
+    crew: crewData,
+    agency: agencyData,
+    shoots: shootsData,
+    productions: productionsData,
+    processedIds: Array.from(processedIds),
+    skipped: skippedCount,
+    errors: errorCount
+  }, "filmcontacts_checkpoint.json");
+}
+
+function loadCheckpoint(saved) {
+  crewData = saved.crew || {};
+  agencyData = saved.agency || {};
+  shootsData = saved.shoots || [];
+  productionsData = saved.productions || {};
+  processedIds = new Set(saved.processedIds || []);
+  allEmailIds = saved.allEmailIds || [];
+  skippedCount = saved.skipped || 0;
+  errorCount = saved.errors || 0;
+}
+
+// ── UI updates ─────────────────────────────────────────────────────────────
+function updateCounts() {
+  const crew = Object.keys(crewData).length;
+  const agency = Object.keys(agencyData).length;
+  const prod = Object.keys(productionsData).length;
+  const sh = shootsData.length;
+
+  let html = "";
+  if (crew + agency + prod + sh > 0) {
+    html = '<div class="counts-row">' +
+      countBox(crew, "👥 Crew", "#1565c0") +
+      countBox(agency, "🏢 Agency/prod", "#2e7d32") +
+      countBox(prod, "🎬 Productions", "#b07d00") +
+      countBox(sh, "📋 Shoots", "#b71c1c") +
+      "</div>";
+  }
+  return html;
+}
+function countBox(n, label, col) {
+  return '<div class="count-box"><div class="count-num" style="color:' + col + '">' + n + '</div><div class="count-label">' + label + '</div></div>';
+}
+
+function updateProgress() {
+  const done = processedIds.size;
+  const total = allEmailIds.length;
+  const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+  return { done, total, pct };
+}
+
+function renderStep2(extraHtml, eta) {
+  const { done, total, pct } = updateProgress();
+  const countsHtml = updateCounts();
+  let progHtml = "";
+  if (total > 0) {
+    const barColor = phase === "done" ? "#2e7d32" : "#c89000";
+    progHtml = '<div class="progress-
