@@ -1,0 +1,9 @@
+run = "npm install && node index.js"
+
+[deployment]
+run = ["sh", "-c", "npm install && node index.js"]
+deploymentTarget = "cloudrun"
+
+[[ports]]
+localPort = 3000
+externalPort = 80
