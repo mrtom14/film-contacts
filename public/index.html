@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Film Contacts Extractor</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: Georgia, serif; background: #f2f2ef; color: #1a1a1a; min-height: 100vh; padding: 24px 16px; }
+h1 { font-size: 20px; font-weight: bold; margin-bottom: 4px; }
+.subtitle { font-size: 13px; color: #777; margin-bottom: 22px; }
+.wrap { max-width: 680px; margin: 0 auto; }
+.card { background: #fff; border: 1px solid #ddd; border-radius: 0 8px 8px 0; padding: 18px 20px; margin-bottom: 14px; }
+.card-inner { display: flex; align-items: flex-start; }
+.num { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 50%; font-weight: bold; font-size: 13px; margin-right: 10px; flex-shrink: 0; color: #fff; background: #bbb; }
+.card-body { flex: 1; }
+.card-title { font-weight: bold; font-size: 15px; margin-bottom: 6px; }
+.card-text { font-size: 13px; color: #555; line-height: 1.6; margin: 6px 0; }
+.prog-wrap { margin: 10px 0 6px; }
+.prog-meta { display: flex; justify-content: space-between; font-size: 12px; color: #555; margin-bottom: 4px; }
+.prog-bar { background: #e0e0e0; border-radius: 4px; height: 8px; }
+.prog-fill { height: 100%; border-radius: 4px; transition: width 0.5s; background: #c89000; }
+.prog-sub { font-size: 11px; color: #aaa; margin-top: 4px; }
+.counts { display: flex; gap: 10px; flex-wrap: wrap; margin: 12px 0; }
+.count-box { background: #fff; border: 1px solid #ddd; padding: 10px 14px; border-radius: 6px; min-width: 75px; text-align: center; }
+.count-n { font-size: 22px; font-weight: bold; }
+.count-l { font-size: 11px; color: #888; }
+btn { display: inline-block; }
+button { padding: 10px 20px; font-family: Georgia, serif; font-weight: bold; font-size: 14px; cursor: pointer; border-radius: 6px; border: none; margin-right: 8px; margin-top: 8px; }
+.btn-amber { background: #c89000; color: #fff; }
+.btn-green { background: #2e7d32; color: #fff; }
+.btn-blue { background: #1565c0; color: #fff; }
+.btn-stop { background: #fff; color: #c62828; border: 2px solid #c62828 !important; }
+.btn-sm { font-size: 12px; padding: 7px 14px; }
+tag { display: inline-block; font-family: monospace; font-size: 11px; background: #f0f0f0; border: 1px solid #ccc; border-radius: 3px; padding: 1px 5px; }
+.drop-zone { border: 3px dashed #bbb; background: #fafafa; border-radius: 6px; padding: 24px 16px; text-align: center; margin: 10px 0; transition: all 0.15s; }
+.drop-zone.over { border-color: #1565c0; background: #e8f0fe; }
+.drop-icon { font-size: 28px; margin-bottom: 6px; }
+.drop-title { font-size: 14px; font-weight: bold; color: #555; }
+.drop-sub { font-size: 12px; color: #aaa; margin-top: 4px; }
+.info-box { background: #e8f4fd; border: 1px solid #90caf9; border-radius: 4px; padding: 10px 14px; font-size: 13px; color: #1565c0; margin: 8px 0; }
+.warn-box { background: #fff8e1; border: 1px solid #f9a825; border-radius: 4px; padding: 10px 14px; font-size: 13px; color: #5d4037; margin: 8px 0; }
+.log-panel { background: #fff; border: 1px solid #ddd; border-radius: 6px; padding: 14px 16px; margin-top: 8px; }
+.log-label { font-size: 11px; font-weight: bold; color: #888; margin-bottom: 8px; letter-spacing: 1px; text-transform: uppercase; }
+.log-scroll { background: #f8f8f8; border: 1px solid #eee; border-radius: 3px; height: 200px; overflow-y: auto; padding: 8px 10px; font-family: monospace; }
+.log-line { font-size: 11px; line-height: 1.7; }
+.log-t { color: #ccc; margin-right: 6px; }
+.li { color: #888; } .ls { color: #2e7d32; } .lw { color: #b07000; } .le { color: #c62828; }
+.no-api-key { background: #ffebee; border: 2px solid #c62828; border-radius: 8px; padding: 20px; margin-bottom: 20px; }
+.no-api-key h2 { color: #c62828; font-size: 16px; margin-bottom: 10px; }
+.no-api-key p { font-size: 13px; color: #444; line-height: 1.6; margin-bottom: 8px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🎬 Film Contacts Extractor</h1>
+  <p class="subtitle">Server-side edition — runs entirely in the cloud.</p>
+  <div id="no-key-warning" style="display:none;" class="no-api-key">
+    <h2>⚠️ API Key needed</h2>
+    <p>This app needs an Anthropic API key to work. Please add it as a Replit Secret called <tag>ANTHROPIC_API_KEY</tag>.</p>
+    <p>Go to the padlock 🔒 icon in the Replit sidebar → Secrets → Add new secret.</p>
+  </div>
+  <div class="card" id="s1" style="border-left: 4px solid #1565c0;">
+    <div class="card-inner">
+      <span class="num" id="s1n" style="background:#1565c0;">1</span>
+      <div class="card-body">
+        <div class="card-title" id="s1t">Start the extraction</div>
+        <div id="s1b">
+          <p class="card-text">Click below to begin. The tool will search your Zoho mailbox for call sheet emails and work through them automatically.</p>
+          <button class="btn-amber" id="btn-start" onclick="startFresh()">▶ Start Fresh</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="card" id="s2" style="border-left: 4px solid #ccc; opacity:0.5;">
+    <div class="card-inner">
+      <span class="num" id="s2n">2</span>
+      <div class="card-body">
+        <div class="card-title" id="s2t">Extraction progress</div>
+        <div id="s2b"><p class="card-text">Progress will appear here once started.</p></div>
+      </div>
+    </div>
+  </div>
+  <div class="card" id="s3" style="border-left: 4px solid #ccc; opacity:0.5;">
+    <div class="card-inner">
+      <span class="num" id="s3n">3</span>
+      <div class="card-body">
+        <div class="card-title">Download your spreadsheet</div>
+        <div id="s3b"><p class="card-text" style="color:#aaa;">Available once contacts have been found.</p></div>
+      </div>
+    </div>
+  </div>
+  <div class="card" id="s4" style="border-left: 4px solid #ccc;">
+    <div class="card-inner">
+      <span class="num" id="s4n">4</span>
+      <div class="card-body">
+        <div class="card-title">Resume from a checkpoint</div>
+        <div id="s4b">
+          <p class="card-text">If the server restarts or you need to resume, drop your checkpoint file below.</p>
+          <div class="drop-zone" id="drop" ondragover="dOver(event)" ondragleave="dLeave()" ondrop="dDrop(event)">
+            <div class="drop-icon">📂</div>
+            <div class="drop-title">Drop checkpoint file here</div>
+            <div class="drop-sub">Drag <tag>filmcontacts_checkpoint.json</tag> from Downloads</div>
+          </div>
+          <div id="resume-info" style="display:none;"></div>
+          <div id="resume-btn" style="display:none;"><button class="btn-blue" onclick="doResume()">⏩ Resume</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="log-panel">
+    <div class="log-label">Log</div>
+    <div class="log-scroll" id="log"><div class="log-line li">Connecting to server...</div></div>
+  </div>
+</div>
+<script>
+let hasData = false;
+let evtSource = null;
+let statusData = {};
+function t() { return new Date().toLocaleTimeString(); }
+function addLog(msg, type) {
+  const log = document.getElementById('log');
+  if (log.children.length === 1 && log.children[0].textContent.includes('Connecting')) log.innerHTML = '';
+  const d = document.createElement('div');
+  d.className = 'log-line l' + (type||'i')[0];
+  d.innerHTML = '<span class="log-t">' + t() + '</span>' + esc(msg);
+  log.appendChild(d);
+  while (log.children.length > 400) log.removeChild(log.firstChild);
+  log.scrollTop = log.scrollHeight;
+}
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function connectSSE() {
+  evtSource = new EventSource('/events');
+  evtSource.addEventListener('log', e => { const d = JSON.parse(e.data); addLog(d.msg, d.type); });
+  evtSource.addEventListener('status', e => { statusData = JSON.parse(e.data); renderStatus(); });
+  evtSource.addEventListener('done', () => renderDone());
+  evtSource.addEventListener('paused', () => renderPaused());
+  evtSource.onerror = () => { addLog('Connection to server lost — reload the page if this persists.', 'warn'); };
+}
+function renderStatus(eta) {
+  const { processed, total, skipped, errors, crew, agency, productions, shoots } = statusData;
+  const pct = total > 0 ? Math.round((processed / total) * 100) : 0;
+  hasData = crew > 0 || shoots > 0;
+  let html = '';
+  if (total > 0) {
+    html += '<div class="prog-wrap"><div class="prog-meta"><span><strong style="font-size:15px;color:#111">' + pct + '%</strong> — ' + processed + ' of ' + total + ' emails</span>' + (eta ? '<span style="color:#c89000;font-weight:bold">' + eta + '</span>' : '') + '</div><div class="prog-bar"><div class="prog-fill" style="width:' + pct + '%"></div></div><div class="prog-sub">' + skipped + ' skipped · ' + errors + ' errors</div></div>';
+  }
+  if (hasData) {
+    html += '<div class="counts">' + cBox(crew, '👥 Crew', '#1565c0') + cBox(agency, '🏢 Agency', '#2e7d32') + cBox(productions, '🎬 Productions', '#b07d00') + cBox(shoots, '📋 Shoots', '#b71c1c') + '</div>';
+  }
+  html += '<p class="card-text">Working through your emails — this tab can stay in the background.<br>A checkpoint saves automatically every few emails.</p><button class="btn-stop btn-sm" onclick="doStop()">⏸ Pause</button><button class="btn-green btn-sm" onclick="doDownloadCheckpoint()">💾 Save checkpoint</button>';
+  document.getElementById('s2b').innerHTML = html;
+  document.getElementById('s2').style.opacity = '1';
+  document.getElementById('s2').style.borderLeftColor = '#c89000';
+  document.getElementById('s2n').style.background = '#c89000';
+  document.getElementById('s2t').textContent = '⏳ Extracting contacts…';
+  if (hasData) renderDownloadBtn();
+}
+function cBox(n, label, col) { return '<div class="count-box"><div class="count-n" style="color:' + col + '">' + n + '</div><div class="count-l">' + label + '</div></div>'; }
+function renderDownloadBtn() {
+  document.getElementById('s3').style.opacity = '1';
+  document.getElementById('s3').style.borderLeftColor = '#2e7d32';
+  document.getElementById('s3n').style.background = '#2e7d32';
+  document.getElementById('s3b').innerHTML = '<p class="card-text">Download as <tag>.xlsx</tag> — available at any point, even mid-run.</p><button class="btn-green" onclick="doDownloadXLSX()">📥 Download FilmContacts_Master.xlsx</button><button class="btn-blue btn-sm" onclick="doDownloadCheckpoint()" style="margin-top:8px;">💾 Save checkpoint JSON</button>';
+}
+function renderDone() {
+  document.getElementById('s1').style.borderLeftColor = '#2e7d32';
+  document.getElementById('s1n').style.background = '#2e7d32';
+  document.getElementById('s1t').textContent = '✓ Complete!';
+  document.getElementById('s1b').innerHTML = '<p class="card-text" style="color:#2e7d32;font-weight:bold;">All done! Download your spreadsheet below.</p>';
+  document.getElementById('s2').style.borderLeftColor = '#2e7d32';
+  document.getElementById('s2n').style.background = '#2e7d32';
+  document.getElementById('s2t').textContent = '✓ Extraction complete!';
+  renderDownloadBtn();
+}
+function renderPaused() {
+  document.getElementById('s1t').textContent = 'Paused';
+  document.getElementById('s1b').innerHTML = '<p class="card-text">Paused. Click Resume Fresh or load a checkpoint and resume.</p><button class="btn-amber" onclick="startFresh()">▶ Start Fresh</button>';
+  document.getElementById('s2t').textContent = 'Paused';
+}
+async function startFresh() {
+  await fetch('/reset', { method: 'POST' });
+  document.getElementById('btn-start') && (document.getElementById('btn-start').disabled = true);
+  document.getElementById('s1t').textContent = '⏳ Starting…';
+  document.getElementById('s1b').innerHTML = '<p class="card-text">Searching your Zoho mailbox…</p>';
+  document.getElementById('s1').style.borderLeftColor = '#c89000';
+  document.getElementById('s2').style.opacity = '1';
+  document.getElementById('s2').style.borderLeftColor = '#c89000';
+  document.getElementById('s2n').style.background = '#c89000';
+  fetch('/start', { method: 'POST' });
+}
+async function doResume() { document.getElementById('resume-btn').style.display = 'none'; fetch('/start', { method: 'POST' }); }
+async function doStop() { await fetch('/stop', { method: 'POST' }); addLog('Pause requested…', 'warn'); }
+async function doDownloadCheckpoint() {
+  const r = await fetch('/download');
+  const data = await r.json();
+  const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'filmcontacts_checkpoint.json'; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+  addLog('Checkpoint saved to Downloads.', 'success');
+}
+async function doDownloadXLSX() { addLog('Building spreadsheet…', 'info'); const r = await fetch('/download'); const state = await r.json(); buildXLSX(state); }
+function dOver(e) { e.preventDefault(); document.getElementById('drop').classList.add('over'); }
+function dLeave() { document.getElementById('drop').classList.remove('over'); }
+function dDrop(e) {
+  e.preventDefault(); dLeave();
+  const file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+  if (!file || !file.name.endsWith('.json')) { addLog('Please drop a .json checkpoint file.', 'warn'); return; }
+  const reader = new FileReader();
+  reader.onload = async ev => {
+    try {
+      const saved = JSON.parse(ev.target.result);
+      if (!saved || !saved.allIds || !saved.allIds.length) { addLog('Invalid checkpoint file.', 'error'); return; }
+      const r = await fetch('/load-checkpoint', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(saved) });
+      const result = await r.json();
+      if (result.ok) {
+        document.getElementById('resume-info').style.display = 'block';
+        document.getElementById('resume-info').innerHTML = '<div class="info-box">✅ Checkpoint loaded — ' + result.processed + ' of ' + result.total + ' emails already done.</div>';
+        document.getElementById('resume-btn').style.display = 'block';
+        document.getElementById('s4').style.borderLeftColor = '#1565c0';
+        document.getElementById('s4n').style.background = '#1565c0';
+        addLog('Checkpoint loaded: ' + result.processed + '/' + result.total + ' done. Click Resume.', 'success');
+      }
+    } catch(err) { addLog('Could not read checkpoint: ' + err.message, 'error'); }
+  };
+  reader.readAsText(file);
+}
+function buildXLSX(state) {
+  const wb = XLSX.utils.book_new();
+  const F = { crew: { fgColor: { rgb: 'D6E4F0' } }, agency: { fgColor: { rgb: 'D6F0D6' } }, prod: { fgColor: { rgb: 'FFF2CC' } }, shoots: { fgColor: { rgb: 'F4CCCC' } } };
+  const hFont = { bold: true, sz: 11 }; const bFont = { sz: 10 }; const iFont = { sz: 10, italic: true, color: { rgb: '888888' } }; const lFont = { sz: 10, color: { rgb: '1155CC' }, underline: true }; const wa = { wrapText: true, vertical: 'top' };
+  function hStyle(fill) { return { font: hFont, fill, alignment: { horizontal: 'center', vertical: 'center', wrapText: true }, border: { bottom: { style: 'medium', color: { rgb: '999999' } } } }; }
+  function cStyle(v) { return (typeof v === 'string' && v[0] === '~') ? { font: iFont, alignment: wa } : { font: bFont, alignment: wa }; }
+  function cell(v) { const s = String(v == null ? '' : v); return { v: s, t: 's', s: cStyle(s) }; }
+  function lCell(u, d) { if (!u) return cell(''); return { v: d, t: 's', l: { Target: u }, s: { font: lFont, alignment: wa } }; }
+  function mCell(e) { if (!e) return cell(''); return { v: e, t: 's', l: { Target: 'mailto:' + e }, s: { font: lFont, alignment: wa } }; }
+  function mapCell(u) { return lCell(u, u ? 'Location' : ''); }
+  function freeze(ws) { ws['!freeze'] = { xSplit: 0, ySplit: 1, topLeftCell: 'A2', activePane: 'bottomLeft' }; }
+  function af(ws, n) { ws['!autofilter'] = { ref: 'A1:' + XLSX.utils.encode_col(n - 1) + '1' }; }
+  function crewSheet(store, name, fill) {
+    const entries = Object.values(store).sort((a, b) => a.name.localeCompare(b.name));
+    const maxS = entries.reduce((m, e) => Math.max(m, e.shoots.length), 0);
+    const hdrs = ['Name','Primary Role','Department','Phone','Email','Total Shoots'];
+    for (let i = 1; i <= maxS; i++) hdrs.push('S'+i+' Date','S'+i+' Role','S'+i+' Project','S'+i+' Client','S'+i+' Location','S'+i+' Map');
+    const ws = {}; const range = { s: { r: 0, c: 0 }, e: { r: 0, c: hdrs.length - 1 } };
+    hdrs.forEach((h, ci) => { ws[XLSX.utils.encode_cell({ r: 0, c: ci })] = { v: h, t: 's', s: hStyle(fill) }; });
+    entries.forEach((e, ri) => {
+      const r = ri + 1; range.e.r = r;
+      const row = [cell(e.name), cell(e.primary_role), cell(e.department), cell(e.phone), mCell(e.email), cell(e.shoots.length)];
+      e.shoots.slice().sort((a, b) => (b.date||'').localeCompare(a.date||'')).forEach(s => row.push(cell(s.date), cell(s.role), cell(s.project), cell(s.client), cell(s.location), mapCell(s.maps_link)));
+      row.forEach((c, ci) => { ws[XLSX.utils.encode_cell({ r, c: ci })] = c; });
+    });
+    ws['!ref'] = XLSX.utils.encode_range(range);
+    ws['!cols'] = hdrs.map((h, i) => h === 'Email' ? { wch: 28 } : h.endsWith('Map') ? { wch: 10 } : h.endsWith('Location') ? { wch: 22 } : i < 6 ? { wch: 22 } : { wch: 16 });
+    ws['!rows'] = [{ hpt: 28 }]; freeze(ws); af(ws, hdrs.length);
+    XLSX.utils.book_append_sheet(wb, ws, name);
+  }
+  crewSheet(state.crew, 'Crew Contacts', F.crew);
+  crewSheet(state.agency, 'Agency & Production', F.agency);
+  (() => {
+    const hdrs = ['Title','Year','Category','Director','Producer','Production Company','Client','Brand 1','Brand 2','Brand 3','Shoot Dates'];
+    const entries = Object.values(state.productions).sort((a, b) => b.year.localeCompare(a.year));
+    const ws = {}; const range = { s: { r: 0, c: 0 }, e: { r: Math.max(entries.length, 1), c: hdrs.length - 1 } };
+    hdrs.forEach((h, ci) => { ws[XLSX.utils.encode_cell({ r: 0, c: ci })] = { v: h, t: 's', s: hStyle(F.prod) }; });
+    entries.forEach((p, ri) => { const r = ri + 1; const b = p.brands || []; [p.title, p.year, p.type, p.director, p.producer, p.production_company, p.client, b[0]||'', b[1]||'', b[2]||'', (p.dates||[]).slice().sort().join(', ')].forEach((v, ci) => { ws[XLSX.utils.encode_cell({ r, c: ci })] = cell(v); }); });
+    ws['!ref'] = XLSX.utils.encode_range(range); ws['!cols'] = [28,8,16,22,22,26,22,20,20,20,32].map(w => ({ wch: w }));
+    ws['!rows'] = [{ hpt: 28 }]; freeze(ws); af(ws, hdrs.length);
+    XLSX.utils.book_append_sheet(wb, ws, 'Productions');
+  })();
+  (() => {
+    const hdrs = ['Date','Project','Category','Director','Producer','Production Company','Client','Brand 1','Brand 2','Brand 3','Location','Map'];
+    const entries = (state.shoots||[]).slice().sort((a, b) => (b.date||'').localeCompare(a.date||''));
+    const ws = {}; const range = { s: { r: 0, c: 0 }, e: { r: Math.max(entries.length, 1), c: hdrs.length - 1 } };
+    hdrs.forEach((h, ci) => { ws[XLSX.utils.encode_cell({ r: 0, c: ci })] = { v: h, t: 's', s: hStyle(F.shoots) }; });
+    entries.forEach((s, ri) => { const r = ri + 1; const b = s.brands || []; [cell(s.date),cell(s.title),cell(s.type),cell(s.director),cell(s.producer),cell(s.production_company),cell(s.client),cell(b[0]||''),cell(b[1]||''),cell(b[2]||''),cell(s.location),mapCell(s.maps_link)].forEach((c, ci) => { ws[XLSX.utils.encode_cell({ r, c: ci })] = c; }); });
+    ws['!ref'] = XLSX.utils.encode_range(range); ws['!cols'] = [14,26,16,22,22,26,22,20,20,20,26,10].map(w => ({ wch: w }));
+    ws['!rows'] = [{ hpt: 28 }]; freeze(ws); af(ws, hdrs.length);
+    XLSX.utils.book_append_sheet(wb, ws, 'All Shoots');
+  })();
+  XLSX.writeFile(wb, 'FilmContacts_Master.xlsx');
+  addLog('Spreadsheet downloaded!', 'success');
+}
+window.onload = () => {
+  connectSSE();
+  fetch('/state').then(r => r.json()).then(d => {
+    statusData = d;
+    if (d.processed > 0) {
+      addLog('Found existing progress: ' + d.processed + ' of ' + d.total + ' emails already done.', 'info');
+      renderStatus();
+      if (d.crew > 0 || d.shoots > 0) renderDownloadBtn();
+    } else {
+      addLog('Ready. Click Start Fresh to begin.', 'info');
+    }
+  }).catch(() => {
+    addLog('Could not connect to server.', 'error');
+    document.getElementById('no-key-warning').style.display = 'block';
+  });
+};
+</script>
+</body>
+</html>
